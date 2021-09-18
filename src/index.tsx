@@ -1,3 +1,9 @@
+import {
+  ApolloClient,
+  ApolloProvider,
+  InMemoryCache,
+  useMutation,
+} from "@apollo/client";
 import type { DocumentNode, InputValueDefinitionNode, TypeNode } from "graphql";
 import gql from "graphql-tag";
 import startCase from "lodash.startcase";
@@ -8,6 +14,7 @@ interface Props {
   action?: string;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   mutation: DocumentNode;
+  operation: DocumentNode;
 }
 
 function useValidMutationField(mutation: DocumentNode) {
@@ -40,11 +47,13 @@ function useValidMutationField(mutation: DocumentNode) {
 }
 
 function MutationForm({
-  action = "/graphql",
+  action = "/graphql", // REVIEW: useApolloClient すれば取れる？
   method = "POST",
   mutation,
+  operation,
 }: Props) {
   const field = useValidMutationField(mutation);
+  const [mutate] = useMutation(operation);
 
   if (!field) {
     return (
@@ -54,10 +63,17 @@ function MutationForm({
     );
   }
 
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    mutate({
+      // TODO: field.arguments からなんとかして得たい
+    });
+  };
+
   console.log(field.arguments);
 
   return (
-    <form action={action} method={method}>
+    <form onSubmit={onSubmit} action={action} method={method}>
       <h2>{startCase(field.name.value)}</h2>
       {field.description && <p>{field.description.value}</p>}
 
@@ -150,11 +166,31 @@ function App() {
     }
   `;
 
+  const operation = gql`
+    mutation OnSubmit($id: ID, $name: String!, $pageCount: Int) {
+      registerBook(id: $id, name: $name, pageCount: $pageCount) {
+        id
+      }
+    }
+  `;
+
   return (
     <main>
-      <MutationForm mutation={mutation} />
+      <MutationForm mutation={mutation} operation={operation} />
     </main>
   );
 }
 
-render(<App />, document.getElementById("app"));
+render(
+  <ApolloProvider
+    client={
+      new ApolloClient({
+        uri: "/graphql",
+        cache: new InMemoryCache(),
+      })
+    }
+  >
+    <App />
+  </ApolloProvider>,
+  document.getElementById("app")
+);
