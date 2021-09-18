@@ -1,6 +1,6 @@
-# package-name
+# graphql-form
 
-description
+Generate a form from graphql mutation
 
 ### Why?
 
