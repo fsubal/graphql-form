@@ -2,6 +2,8 @@
 
 Generate a form from graphql mutation
 
+![image](docs/image.png)
+
 ### Why?
 
 motivation
